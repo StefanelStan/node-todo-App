@@ -33,9 +33,6 @@ app.listen(3000, () =>{
 	console.log('Express Server started listening on port 3000');
 });
 
-//var newTodo = new Todo({text: true});
-var newUser = new User({email: '     bbb@yahoo.com       '});
-
-newUser.save()
-	.then((result) => {console.log('Saved to do by Mongoose',result);})
-	.catch((error) => {console.log('Unable to save to db by Mongoose', error._message);});
+module.exports = {
+	app
+};
