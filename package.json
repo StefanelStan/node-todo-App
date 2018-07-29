@@ -1,5 +1,5 @@
 {
-  "name": "c8l5",
+  "name": "c7l5",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -9,6 +9,9 @@
   "author": "Stefannel",
   "license": "ISC",
   "dependencies": {
-    "mongodb": "^3.1.1"
+    "body-parser": "^1.18.3",
+    "express": "^4.16.3",
+    "mongodb": "^3.1.1",
+    "mongoose": "^5.2.5"
   }
 }
