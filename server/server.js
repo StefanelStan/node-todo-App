@@ -14,7 +14,6 @@ app.post('/todos', (request, response) => {
 	var todo = new Todo({
 		text: request.body.text
 	});
-	let msg = null;
 	todo.save()
 		.then((result) => {
 			response.status(200).send(result);
