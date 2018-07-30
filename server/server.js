@@ -25,9 +25,15 @@ app.post('/todos', (request, response) => {
 	
 });
 
-
-
-
+app.get('/todos', (request, response) => {
+	Todo.find()
+		.then((todos) => {
+			response.status(200).send({todos});
+		})
+		.catch((error) => {
+			response.status(400).send(error);
+		});
+});
 
 app.listen(3000, () =>{
 	console.log('Express Server started listening on port 3000');
