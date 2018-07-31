@@ -18,23 +18,25 @@ app.post('/todos', (request, response) => {
 		.then((result) => {
 			response.status(200).send(result);
 		})
-		.catch ((error) => {
+		.catch((error) => {
 			response.status(400).send(error);
 		});
-	
+
 });
 
 app.get('/todos', (request, response) => {
 	Todo.find()
 		.then((todos) => {
-			response.status(200).send({todos});
+			response.status(200).send({
+				todos
+			});
 		})
 		.catch((error) => {
 			response.status(400).send(error);
 		});
 });
 
-app.listen(3000, () =>{
+app.listen(3000, () => {
 	console.log('Express Server started listening on port 3000');
 });
 
