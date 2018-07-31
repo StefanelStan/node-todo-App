@@ -4,7 +4,7 @@ const expect = require('chai').expect;
 const app = require('./../server.js').app;
 const {Todo} = require('./../models/todo.js');
 
-const todos = [
+var todos = [
 	{text: 'First test todo'},
 	{text: 'Second text todo'}
 ];
