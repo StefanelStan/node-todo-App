@@ -4,8 +4,14 @@ const expect = require('chai').expect;
 const app = require('./../server.js').app;
 const {Todo} = require('./../models/todo.js');
 
+const todos = [
+	{text: 'First test todo'},
+	{text: 'Second text todo'}
+];
 beforeEach((done) => {
-	Todo.remove({}).then(() => done());
+	Todo.remove({}).then(() => {
+		return Todo.insertMany(todos);
+	}).then(() => done());
 });
 
 describe('POST /todos', () => {
@@ -24,14 +30,13 @@ describe('POST /todos', () => {
 				return done(error);
 			
 			Todo.find().then((todos) =>{
-				expect(todos.length).to.equal(1);
-				expect(todos[0].text).to.equal(text);
+				expect(todos.length).to.equal(3);
+				expect(todos[2].text).to.equal(text);
 				done();
 			}).catch((error) => done(error));
 		})
 	});
-	
-	
+		
 	it('should_not_create_todo_with_invalid_data', (done) => {
 		request(app)
 			.post('/todos')
@@ -43,12 +48,21 @@ describe('POST /todos', () => {
 				return done(error);
 			
 			Todo.find().then((todos) =>{
-				expect(todos.length).to.equal(0);
+				expect(todos.length).to.equal(2);
 				done();
 			}).catch((error) => done(error));
-	})
-		
-		
+		})
 	});
 	
+	it('should_get_the_list_of_all_users', (done) => {
+		request(app)
+			.get('/todos')
+			.expect(200)
+			.expect((response) => {
+				expect(response.body.todos.length).to.equal(2);
+			})
+			.end(done);
+
+	});
+
 });
