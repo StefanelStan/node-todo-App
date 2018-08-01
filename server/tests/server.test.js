@@ -99,17 +99,45 @@ describe('POST /todos', () => {
 	
 	});
 
-	describe('DELETE /todos/id', ()=>{
-		if('should_delete_todo_by_id', (done) => {
-			supertest(app)
-				.delete(`/todos/${todos[0].id}`)
-				.expect(200)
-				.expect((response) =>{
-					expect(response.body.todo.text).to.equal(todos[0].text);
-				})
-				.end(done)
-		});
+});
 
 
+describe('DELETE /todos/id', ()=>{
+	it('should_delete_todo_by_id', (done) => {
+		let hexId = todos[0]._id.toHexString();
+		supertest(app)
+			.delete(`/todos/${hexId}`)
+			.expect(200)
+			.expect((response) =>{
+				expect(response.body.todo.text).to.equal(todos[0].text);
+				expect(response.body.todo._id).to.equal(hexId);
+			})
+			.end((err, res) => {
+				if(err)
+					return done(err);
+				Todo.findById(hexId)
+					.then((todo) => {
+						expect(todo).to.be.null;
+						done();
+					})
+					.catch((error) => done(error));	
+			});
 	});
+
+	it('should_return_404_if_invalidID_passed', (done) => {
+		supertest(app)
+			.delete('/todos/123abc')
+			.expect(404)
+			.end(done);
+	});
+
+	it('should_return_404_if_todo_not_found', (done) => {
+		let newId = new ObjectID();
+		supertest(app)
+			.delete(`/todos/${newId.toHexString()}`)
+			.expect(404)
+			.end(done);
+	});
+
+
 });
