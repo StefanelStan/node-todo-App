@@ -98,4 +98,18 @@ describe('POST /todos', () => {
 	
 	
 	});
+
+	describe('DELETE /todos/id', ()=>{
+		if('should_delete_todo_by_id', (done) => {
+			supertest(app)
+				.delete(`/todos/${todos[0].id}`)
+				.expect(200)
+				.expect((response) =>{
+					expect(response.body.todo.text).to.equal(todos[0].text);
+				})
+				.end(done)
+		});
+
+
+	});
 });
