@@ -57,10 +57,9 @@ app.get('/todos/:id', (request, response) => {
 	Todo.findById(id)
 		.then((todo) => {
 			if (!todo) {
-				return response.send(404).send();
-			} else {
-				response.status(200).send({todo});
+				return response.status(404).send();
 			}
+			response.status(200).send({ todo });
 		})
 		.catch((error) => {
 			response.status(400).send();

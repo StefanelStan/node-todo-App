@@ -1,12 +1,13 @@
-const request = require('supertest');
+const supertest = require('supertest');
 const expect = require('chai').expect;
+const {ObjectID} = require('mongodb');
 
 const app = require('./../server.js').app;
 const {Todo} = require('./../models/todo.js');
 
 var todos = [
-	{text: 'First test todo'},
-	{text: 'Second text todo'}
+	{ _id: new ObjectID(), text: 'First test todo'},
+	{ _id: new ObjectID(), text: 'Second text todo'}
 ];
 beforeEach((done) => {
 	Todo.remove({}).then(() => {
@@ -18,7 +19,7 @@ describe('POST /todos', () => {
 	it('should create a new to do', (done) => {
 		var text = 'Test doto text';
 
-		request(app)
+		supertest(app)
 			.post('/todos')
 			.send({
 				text
@@ -42,7 +43,7 @@ describe('POST /todos', () => {
 	});
 
 	it('should_not_create_todo_with_invalid_data', (done) => {
-		request(app)
+		supertest(app)
 			.post('/todos')
 			.send({})
 			.expect(400)
@@ -59,7 +60,7 @@ describe('POST /todos', () => {
 	});
 
 	it('should_get_the_list_of_all_users', (done) => {
-		request(app)
+		supertest(app)
 			.get('/todos')
 			.expect(200)
 			.expect((response) => {
@@ -68,5 +69,33 @@ describe('POST /todos', () => {
 			.end(done);
 
 	});
-
+	describe('GET /todos/id', () => {
+		it('should_return_valid_todo_for_valid_id', (done) => {
+			console.log(`/todos/${todos[0]._id.toHexString()}`);
+			supertest(app)
+				.get(`/todos/${todos[0]._id}`)
+				.expect(200)
+				.expect((response) => {
+					expect(response.body.todo.text).to.equal(todos[0].text);
+				})
+				.end(done);
+		});
+		
+		it('should_return_404_if_todo_not_found', (done) => {
+			let newId = new ObjectID();
+			supertest(app)
+				.get(`/todos/${newId.toHexString()}`)
+				.expect(404)
+				.end(done);
+		});
+	
+		it('should_return_404_if_id_is_invalid', (done) => {
+			supertest(app)
+				.get(`/todos/123abc`)
+				.expect(404)
+				.end(done);
+		});
+	
+	
+	});
 });
