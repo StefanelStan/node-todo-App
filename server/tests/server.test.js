@@ -7,7 +7,7 @@ const {Todo} = require('./../models/todo.js');
 
 var todos = [
 	{ _id: new ObjectID(), text: 'First test todo'},
-	{ _id: new ObjectID(), text: 'Second text todo'}
+	{ _id: new ObjectID(), text: 'Second text todo', completed: true, completedAt: 333}
 ];
 beforeEach((done) => {
 	Todo.remove({}).then(() => {
@@ -95,12 +95,8 @@ describe('POST /todos', () => {
 				.expect(404)
 				.end(done);
 		});
-	
-	
 	});
-
 });
-
 
 describe('DELETE /todos/id', ()=>{
 	it('should_delete_todo_by_id', (done) => {
@@ -138,4 +134,61 @@ describe('DELETE /todos/id', ()=>{
 			.expect(404)
 			.end(done);
 	});
+});
+
+describe('PATCH todos/:id', () => {
+	it('should update the to do', (done) => {
+		//grabId firstItem, update the text and completed true
+		//assert 200 back and 1 custom veryfy that response has text property == text I set & completed==true and completeAt is a number 
+		todos[0].text = "mock test";
+		todos[0].completed = true;
+		supertest(app)
+			.patch(`/todos/${todos[0]._id}`)
+			.send(todos[0])
+			.expect(200)
+			.expect((response) => {
+				expect(response.body.todo.text).to.equal(todos[0].text);
+				expect(response.body.todo.completed).to.be.true;
+				expect(response.body.todo.completedAt).to.be.a('number');
+			})
+			.end((err, res)=>{
+				if(err)
+					return done(err);
+				Todo.findById(todos[0]._id)
+					.then((result) => {
+						expect(result.text).to.equal(todos[0].text);
+						done();
+					})
+					.catch((error) => done(error));	
+			})
+	});
+
+	it('should clear completedAt when not completed', (done)=>{
+		//grab id of 2nd todo Item, update the text and set completed=false
+		//assert 200 & expect response body represent those changes and completedAt is null & completed is false
+		todos[1].text = 'Changed for 2nd test';
+		todos[1].completed = false;
+		supertest(app)
+			.patch(`/todos/${todos[1]._id}`)
+			.send(todos[1])
+			.expect(200)
+			.expect((response) => {
+				expect(response.body.todo.text).to.equal(todos[1].text);
+				expect(response.body.todo.completed).to.be.false;
+				expect(response.body.todo.completedAt).to.be.null;
+			})
+			.end((err, res) => {
+				if(err)
+					return done(err);
+				Todo.findById(todos[1]._id)
+					.then((result) => {
+						expect(result.text).to.equal(todos[1].text);
+						expect(result.completed).to.be.false;
+						expect(result.completedAt).to.be.null;
+						done();
+					})
+					.catch((err) => done(err));	
+			})
+	});
+
 });
