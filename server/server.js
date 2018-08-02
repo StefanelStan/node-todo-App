@@ -11,7 +11,7 @@ var {User} = require('./models/user.js');
 var {Todo} = require('./models/todo.js');
 
 var app = express();
-const port = process.env.PORT;
+const port = process.env.PORT || 3000;
 
 app.use(bodyParser.json());
 
