@@ -6,6 +6,7 @@ var bodyParser = require('body-parser');
 var {ObjectID} = require('mongodb'); 
 var _ = require('lodash');
 
+var {authenticate} = require('./middleware/authenticate.js');
 var {mongoose} = require('./db/mongoose.js');
 var {User} = require('./models/user.js');
 var {Todo} = require('./models/todo.js');
@@ -133,7 +134,12 @@ app.post('/users', (request, response) => {
 });
 
 
-
+/**
+ * Private Route
+ */
+app.get('/users/me', authenticate, (request, response) => {
+	 response.status(200).send(request.user);
+});
 
 
 app.listen(port, () => {
