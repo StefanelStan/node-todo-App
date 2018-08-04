@@ -113,6 +113,25 @@ app.patch('/todos/:id', (request, response) => {
 		});
 });
 
+// POST /users ->create new user 
+app.post('/users', (request, response) => {
+	let userBody = _.pick(request.body, ['email', 'password']);
+	let newUser = new User(userBody);
+	newUser.save()
+		.then((user) => {
+			return user.generateAuthTokens()
+				.then((token) => {
+					return response.status(200).header('x-auth', token).send(user);
+				})
+		})
+		.catch((error) => {
+			return response.status(400).send(error.message);
+		});
+});
+
+
+
+
 
 app.listen(port, () => {
 	console.log(`Express Server started listening on port ${port}`);
