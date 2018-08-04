@@ -121,7 +121,10 @@ app.post('/users', (request, response) => {
 		.then((user) => {
 			return user.generateAuthTokens()
 				.then((token) => {
-					return response.status(200).header('x-auth', token).send(user);
+					return response.status(200)
+						//.header('x-auth', user.tokens[0].token)
+						.header('x-auth', token)
+						.send(user);
 				})
 		})
 		.catch((error) => {
