@@ -309,4 +309,26 @@ describe('User Tests Section', () => {
 		});
 	});
 
+	describe('DELETE /users/me/token', () => {
+		it('should remove the user token on logout', (done) =>{
+			supertest(app)
+			.delete('/users/me/token')
+			.set('x-auth', users[0].tokens[0].token)
+			.expect(200)
+			.expect((response) =>{
+				expect(response.headers['x-auth']).to.not.exist;
+			})
+			.end((err, response) =>{
+				if(err)
+					return done(err);
+				User.findById(users[0]._id)
+					.then((user) =>{
+						expect(user.tokens).to.be.empty;
+						done();
+					})
+					.catch((error) => done(error));	
+			});
+		});
+	});
+
 });
