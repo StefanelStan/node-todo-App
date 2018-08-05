@@ -214,50 +214,99 @@ describe('User Tests Section', () => {
 	});
 
 	describe('POST /users', ()=> {
-			it('should create a user', (done) => {
-				let email = 'example@exam.completed';
-				let password = '123abc';
-				supertest(app)
-					.post('/users')
-					.send({email, password})
-					.expect(200)
-					.expect((response) => {
-						expect(response.headers['x-auth']).to.exist;
-						expect(response.body._id).to.exist;
-						expect(response.body.email).to.equal(email)
-					})
-					.end((err) =>{
-						if(err)
-							return done(err);
-						User.findOne({email})
-							.then((user) => {
-								expect(user).to.exist;
-								expect(user.password).to.not.equal(password);
-								done();
-							})
-							.catch((err) => done(err));	
-					});
-			});
+		it('should create a user', (done) => {
+			let email = 'example@exam.completed';
+			let password = '123abc';
+			supertest(app)
+				.post('/users')
+				.send({email, password})
+				.expect(200)
+				.expect((response) => {
+					expect(response.headers['x-auth']).to.exist;
+					expect(response.body._id).to.exist;
+					expect(response.body.email).to.equal(email)
+				})
+				.end((err) =>{
+					if(err)
+						return done(err);
+					User.findOne({email})
+						.then((user) => {
+							expect(user).to.exist;
+							expect(user.password).to.not.equal(password);
+							done();
+						})
+						.catch((err) => done(err));	
+				});
+		});
 
-			it('should return validation error if invalid request', (done) => {
-				let email = 'aaa';
-				let password = '123abc';
-				supertest(app)
-					.post('/users')
-					.send({email, password})
-					.expect(400)
-					.end(done);
-			});
+		it('should return validation error if invalid request', (done) => {
+			let email = 'aaa';
+			let password = '123abc';
+			supertest(app)
+				.post('/users')
+				.send({email, password})
+				.expect(400)
+				.end(done);
+		});
 
-			it('should not create user if email in use', (done) => {
-				let password = '123abc';
-				let email = users[0].email;
-				supertest(app)
-					.post('/users')
-					.send({email, password})
-					.expect(400)
-					.end(done);
-			});
+		it('should not create user if email in use', (done) => {
+			let password = '123abc';
+			let email = users[0].email;
+			supertest(app)
+				.post('/users')
+				.send({email, password})
+				.expect(400)
+				.end(done);
+		});
+	});
+
+	describe(' POST /users/login', () =>{
+		it('should login user and return token', (done) =>{
+			//use 2nd user from db and check if db has token
+			supertest(app)
+				.post('/users/login')
+				.send({email: users[1].email, password: users[1].password})
+				.expect(200)
+				.expect((result) =>{
+					expect(result.body._id).to.equal(users[1]._id.toHexString());
+					expect(result.body.email).to.equal(users[1].email);
+					expect(result.headers['x-auth']).to.exist;
+				})
+				.end((err, result) =>{
+					if(err)
+						return done(err);
+					User.findOne({email: users[1].email})
+						.then((user) =>{
+							expect(user.tokens).to.not.be.empty;
+							expect(user.tokens[0]).to.include({
+								access: 'auth',
+								token: result.headers['x-auth']
+							});
+							done();
+						})
+						.catch((error) => done(error));	
+				});
+		});
+
+		it('should reject invalid login', (done) =>{
+			supertest(app)
+				.post('/users/login')
+				.send({email: users[1].email, password: 'abcde'})
+				.expect(401)
+				.expect((result) =>{
+					expect(result.headers['x-auth']).to.not.exist;
+				})
+				.end((err, result) =>{
+					if(err)
+						return done(err);
+					User.findOne({email: users[1].email})
+						.then((user) =>{
+							expect(user.tokens).to.be.empty;
+							done();
+						})
+						.catch((error) => done(error));	
+				});
+		});
 	});
 
 });

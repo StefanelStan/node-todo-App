@@ -36,10 +36,10 @@ var users = [
 const populateUsers = (done) => {
     User.remove({})
         .then(() => {
-            //let userOne = new User(users[0]);//.save();
-            //let userTwo = new User(users[1]);//.save();
-            //return Promise.all([userOne, userTwo])
-            return User.insertMany(users);
+            let userOne = new User(users[0]).save();
+            let userTwo = new User(users[1]).save();
+            return Promise.all([userOne, userTwo]);
+            //return User.insertMany(users);
         })
         .then(() => done());
 };

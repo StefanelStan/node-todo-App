@@ -5,6 +5,7 @@ var express = require('express');
 var bodyParser = require('body-parser');
 var {ObjectID} = require('mongodb'); 
 var _ = require('lodash');
+const bcrypt = require('bcryptjs');
 
 var {authenticate} = require('./middleware/authenticate.js');
 var {mongoose} = require('./db/mongoose.js');
@@ -139,6 +140,20 @@ app.post('/users', (request, response) => {
  */
 app.get('/users/me', authenticate, (request, response) => {
 	 response.status(200).send(request.user);
+});
+
+app.post('/users/login', (request, response) => {
+	let body = _.pick(request.body, ['email', 'password']);
+	User.findByCredentials(body.email, body.password)
+		.then((user) => {
+			user.generateAuthTokens()
+				.then((token) =>{
+					return response.status(200).header('x-auth', token).send(user);
+				});
+		})
+		.catch((error) =>{
+			response.status(401).send();
+		});
 });
 
 
