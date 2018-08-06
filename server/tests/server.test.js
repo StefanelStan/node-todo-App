@@ -13,9 +13,9 @@ beforeEach(populateTodos);
 describe('POST /todos', () => {
 	it('should create a new to do', (done) => {
 		var text = 'Test doto text';
-
 		supertest(app)
 			.post('/todos')
+			.set('x-auth', users[0].tokens[0].token)
 			.send({
 				text
 			})
@@ -40,6 +40,7 @@ describe('POST /todos', () => {
 	it('should_not_create_todo_with_invalid_data', (done) => {
 		supertest(app)
 			.post('/todos')
+			.set('x-auth', users[0].tokens[0].token)
 			.send({})
 			.expect(400)
 
@@ -57,22 +58,31 @@ describe('POST /todos', () => {
 	it('should_get_the_list_of_all_users', (done) => {
 		supertest(app)
 			.get('/todos')
+			.set('x-auth', users[0].tokens[0].token)
 			.expect(200)
 			.expect((response) => {
-				expect(response.body.todos.length).to.equal(2);
+				expect(response.body.todos.length).to.equal(1);
 			})
 			.end(done);
 
 	});
 	describe('GET /todos/id', () => {
 		it('should_return_valid_todo_for_valid_id', (done) => {
-			console.log(`/todos/${todos[0]._id.toHexString()}`);
 			supertest(app)
 				.get(`/todos/${todos[0]._id}`)
+				.set('x-auth', users[0].tokens[0].token)
 				.expect(200)
 				.expect((response) => {
 					expect(response.body.todo.text).to.equal(todos[0].text);
 				})
+				.end(done);
+		});
+
+		it('should_NOT_return_valid_todo_created_by_another_user', (done) => {
+			supertest(app)
+				.get(`/todos/${todos[1]._id}`)
+				.set('x-auth', users[0].tokens[0].token)
+				.expect(404)
 				.end(done);
 		});
 		
@@ -80,6 +90,7 @@ describe('POST /todos', () => {
 			let newId = new ObjectID();
 			supertest(app)
 				.get(`/todos/${newId.toHexString()}`)
+				.set('x-auth', users[0].tokens[0].token)
 				.expect(404)
 				.end(done);
 		});
@@ -87,6 +98,7 @@ describe('POST /todos', () => {
 		it('should_return_404_if_id_is_invalid', (done) => {
 			supertest(app)
 				.get(`/todos/123abc`)
+				.set('x-auth', users[0].tokens[0].token)
 				.expect(404)
 				.end(done);
 		});
@@ -98,6 +110,7 @@ describe('DELETE /todos/id', ()=>{
 		let hexId = todos[0]._id.toHexString();
 		supertest(app)
 			.delete(`/todos/${hexId}`)
+			.set('x-auth', users[0].tokens[0].token)
 			.expect(200)
 			.expect((response) =>{
 				expect(response.body.todo.text).to.equal(todos[0].text);
@@ -115,9 +128,29 @@ describe('DELETE /todos/id', ()=>{
 			});
 	});
 
+	it('should_NOT_delete_todo_by_id if not created by user', (done) => {
+		let hexId = todos[0]._id.toHexString();
+		supertest(app)
+			.delete(`/todos/${hexId}`)
+			.set('x-auth', users[1].tokens[0].token)
+			.expect(404)
+
+			.end((err, res) => {
+				if(err)
+					return done(err);
+				Todo.findById(hexId)
+					.then((todo) => {
+						expect(todo).to.not.be.null;
+						done();
+					})
+					.catch((error) => done(error));	
+			});
+	});
+
 	it('should_return_404_if_invalidID_passed', (done) => {
 		supertest(app)
 			.delete('/todos/123abc')
+			.set('x-auth', users[1].tokens[0].token)
 			.expect(404)
 			.end(done);
 	});
@@ -126,19 +159,22 @@ describe('DELETE /todos/id', ()=>{
 		let newId = new ObjectID();
 		supertest(app)
 			.delete(`/todos/${newId.toHexString()}`)
+			.set('x-auth', users[1].tokens[0].token)
 			.expect(404)
 			.end(done);
 	});
 });
 
 describe('PATCH todos/:id', () => {
-	it('should update the to do', (done) => {
+	it('should update the to do for the user who created it', (done) => {
 		//grabId firstItem, update the text and completed true
 		//assert 200 back and 1 custom veryfy that response has text property == text I set & completed==true and completeAt is a number 
-		todos[0].text = "mock test";
+		//auth as first user
+		todos[0].text = "mock test 112233";
 		todos[0].completed = true;
 		supertest(app)
 			.patch(`/todos/${todos[0]._id}`)
+			.set('x-auth', users[0].tokens[0].token)
 			.send(todos[0])
 			.expect(200)
 			.expect((response) => {
@@ -158,13 +194,38 @@ describe('PATCH todos/:id', () => {
 			})
 	});
 
-	it('should clear completedAt when not completed', (done)=>{
+	it('should NOT update the to do if NOT the user created it', (done) => {
+		//auth as first user
+		todos[0].text = "mock test";
+		todos[0].completed = true;
+		supertest(app)
+			.patch(`/todos/${todos[0]._id}`)
+			.set('x-auth', users[1].tokens[0].token)
+			.send(todos[0])
+			.expect(404)
+			.end((err, res)=>{
+				if(err)
+					return done(err);
+				Todo.findById(todos[0]._id)
+					.then((result) => {
+						expect(result.text).to.not.equal(todos[0].text);
+						done();
+					})
+					.catch((error) => done(error));	
+			})
+	});
+
+
+	//duplicate test; try to update first todo as 2nd user ->assert 404 
+
+	it('should clear completedAt when todo is not completed', (done)=>{
 		//grab id of 2nd todo Item, update the text and set completed=false
 		//assert 200 & expect response body represent those changes and completedAt is null & completed is false
 		todos[1].text = 'Changed for 2nd test';
 		todos[1].completed = false;
 		supertest(app)
 			.patch(`/todos/${todos[1]._id}`)
+			.set('x-auth', users[1].tokens[0].token)
 			.send(todos[1])
 			.expect(200)
 			.expect((response) => {
@@ -278,7 +339,7 @@ describe('User Tests Section', () => {
 					User.findOne({email: users[1].email})
 						.then((user) =>{
 							expect(user.tokens).to.not.be.empty;
-							expect(user.tokens[0]).to.include({
+							expect(user.tokens[1]).to.include({
 								access: 'auth',
 								token: result.headers['x-auth']
 							});
@@ -294,14 +355,14 @@ describe('User Tests Section', () => {
 				.send({email: users[1].email, password: 'abcde'})
 				.expect(401)
 				.expect((result) =>{
-					expect(result.headers['x-auth']).to.not.exist;
+					expect(result.headers['x-auth']).to.be.undefined;
 				})
 				.end((err, result) =>{
 					if(err)
 						return done(err);
 					User.findOne({email: users[1].email})
 						.then((user) =>{
-							expect(user.tokens).to.be.empty;
+							expect(user.tokens).to.not.be.empty;
 							done();
 						})
 						.catch((error) => done(error));	
